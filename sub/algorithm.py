@@ -9,14 +9,17 @@ class Algorithm(object):
         self.queue = []
         self.time_slice = time_slice
         self.total_burst = 0
+        self.max_arrival = 0
 
-        self.get_total_burst()
+        self.get_maxes()
         self.perform()
-        self.job_order = {}
+        self.job_order = []
 
-    def get_total_burst(self):
+    def get_maxes(self):
         for process in self.processes:
             self.total_burst += process.burst
+            if process.arrival > self.max_arrival:
+                self.max_arrival = process.arrival
 
     def perform(self):
         if self.name == "FCFS":
@@ -27,6 +30,8 @@ class Algorithm(object):
             self.priority()
         elif self.name == "RROBIN":
             self.round_robin()
+        elif self.name == "SRPT":
+            self.srpt()
 
     def fcfs(self):
         self.processes = sorted(self.processes, key=lambda x: x.order, reverse=False)
@@ -83,8 +88,6 @@ class Algorithm(object):
                 process = self.processes[idx]
                 
                 process.start = time
-                if idx == 0:
-                    print(process.start)
                     
                 if process.counter < self.time_slice:
                     time = (time + process.counter)
@@ -111,8 +114,44 @@ class Algorithm(object):
             if idx >= len(self.processes):
                 idx = 0
 
-        print(total_waiting)
         self.awt = total_waiting / len(self.processes)
+
+    def srpt(self):
+        self.processes = sorted(self.processes, key=lambda x: x.arrival, reverse=False)
+        processes = copy.deepcopy(self.processes)
+        current_time = 0
+        idx = 0
+        current = None
+
+        while current_time <= self.max_arrival:
+            arrived_processes = []
+            for item in processes:
+                if item.counter:
+                    if item.arrival == current_time:
+                        arrived_processes.append(item)
+
+            if not current:
+                current = arrived_processes[0]
+                
+            for item in arrived_processes:
+                if item.counter < current.counter:
+                    current.end = current_time
+                    current = item
+
+            current.decrease_burst(factor=1)
+            current.executions += 1
+
+            if current.counter == 0:
+                current = None
+
+            current_time += 1
+
+        processes = sorted(processes, key=lambda x: x.order, reverse=False)
+        processes = sorted(processes, key=lambda x: x.burst, reverse=False)
+
+
+
+
 
     def get_awt(self):
         return str(self.awt) + self.unit
