@@ -6,7 +6,7 @@ class Process(object):
         self.name = name
         self.arrival = arrival
         self.burst = burst
-        self.counter = 0
+        self.counter = burst
         self.priority = priority
         self.waiting = waiting
         self.unit = unit
@@ -18,7 +18,7 @@ class Process(object):
         return str(self.name)
 
     def decrease_burst(self, factor=1):
-        if self.counter < self.burst:
+        if self.counter > 0:
             self.counter -= factor
 
     def is_done(self):

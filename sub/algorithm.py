@@ -12,6 +12,7 @@ class Algorithm(object):
 
         self.get_total_burst()
         self.perform()
+        self.job_order = {}
 
     def get_total_burst(self):
         for process in self.processes:
@@ -71,43 +72,46 @@ class Algorithm(object):
 
     def round_robin(self):
         self.processes = sorted(self.processes, key=lambda x: x.order, reverse=False)
-        tick = 0
-        idx = 0
-        current_time = 0
-        total_waiting = 0
-        not_done = len(self.processes) - 1
         done_processes = []
+        idx = 0
+        time = 0
+        total_waiting = 0
+        factor = 0
 
-        while not_done:
-            process = self.processes[idx]
-            process.start = current_time
+        while len(done_processes) != len(self.processes):
+            if idx not in done_processes:
+                process = self.processes[idx]
+                
+                process.start = time
+                if idx == 0:
+                    print(process.start)
+                    
+                if process.counter < self.time_slice:
+                    time = (time + process.counter)
+                    factor = process.counter
+                    process.decrease_burst(factor=process.counter)
+                    process.executions += self.time_slice
+                    process.end = time
+                    self.queue.append(copy.deepcopy(process))
+                else:
+                    time = (time + self.time_slice)
+                    factor = self.time_slice
+                    process.decrease_burst(factor=self.time_slice)
+                    process.executions += self.time_slice
+                    process.end = time
+                    self.queue.append(copy.deepcopy(process))
 
-            if current_time % self.time_slice != 0:
-                process.decrease_burst(factor=(current_time % self.time_slice))
-                process.end = current_time + (current_time % self.time_slice)
-                current_time += (current_time % self.time_slice)
-            else:
-                process.decreas
+                if process.counter <= 0:
+                    done_processes.append(idx)
+                    process.waiting = ((time - factor) - process.executions)
+                    total_waiting += ((time - factor) - process.executions)
+                    
+            
+            idx += 1
+            if idx >= len(self.processes):
+                idx = 0
 
-            process.decrease_burst(factor=self.time_slice)
-            if process.counter
-        while tick <= self.total_burst:
-            process = self.processes[idx]
-            process.decrease_burst()
-            if process.is_done() or (tick > 0  and tick % self.time_slice == 0):
-                process.executions += self.time_slice
-                process.start = start
-                process.end = tick
-                self.queue.append(copy.deepcopy(process))
-                if process.is_done():
-                    process.waiting = tick - process.executions
-                    total_waiting += tick - process.executions
-
-                idx += 1
-                if idx >= len(self.processes):
-                    idx = 0
-
-            tick += 1
+        print(total_waiting)
         self.awt = total_waiting / len(self.processes)
 
     def get_awt(self):
