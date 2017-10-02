@@ -43,6 +43,7 @@ class Main(tk.Tk):
 		self.algorithm["PRIORITY"] = Algorithm(name="PRIORITY", processes=copy.deepcopy(self.processes))
 		self.algorithm["RROBIN"] = Algorithm(name="RROBIN", processes=copy.deepcopy(self.processes))
 		self.display(processes=copy.deepcopy(self.processes))
+		self.display_eval()
 
 	def display(self, processes=None, key=None):
 		for idx, process in enumerate(processes):
@@ -65,7 +66,21 @@ class Main(tk.Tk):
 
 	def display_results(self, key):
 		self.display(processes=self.algorithm[key].processes, key=key)
+		self.display_eval()
 
+	def display_eval(self):
+		algos = self.algorithm.values()
+		algos = sorted(algos, key=lambda x: x.awt, reverse=False)
+		evaluation = "Evaluation: "
+
+		for idx, algo in enumerate(algos):
+			evaluation += algo.name + "(" + str(algo.awt) + ")"
+			if idx != len(algos) - 1:
+				evaluation += ", "
+			else:
+				evaluation += " "
+
+		self.table.set(3, 0, evaluation)
 
 class Table(tk.Frame):
 	def __init__(self, parent, rows=10, columns=2, num_button=1):
@@ -92,7 +107,7 @@ class Table(tk.Frame):
 		self._widgets.append(current_row)
 
 		current_row = []
-		label = tk.Label(self, text="Evaluation: FCFS (38 ms), SJF (58 ms), SRPT (60 ms), PRIORITY (80 ms), RROBIN (90 ms)",
+		label = tk.Label(self, text="Evaluation: ",
 						borderwidth=1, width=15, foreground="black", background="white", anchor="w")
 		label.grid(row=rows + 1, columnspan=5, sticky="nsew", padx=1, pady=1)
 		current_row.append(label)
@@ -100,7 +115,7 @@ class Table(tk.Frame):
 
 		current_row = []
 		label = tk.Label(self, text="",
-						borderwidth=1, width=15, foreground="black", background="white", wraplength=700, anchor="w")
+						borderwidth=1, width=15, foreground="black", background="white", anchor="w")
 		label.grid(row=rows + 2, columnspan=5, sticky="nsew", padx=1, pady=1)
 		current_row.append(label)
 		self._widgets.append(current_row)
