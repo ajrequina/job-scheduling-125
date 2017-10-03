@@ -44,7 +44,6 @@ class Algorithm(object):
             process.waiting = current_time
             current_time = current_time + process.counter
             total_waiting += process.waiting
-        print("FCFS : " + str(total_waiting))
         self.awt = total_waiting / len(self.processes)
 
     def sjf(self):
@@ -58,7 +57,7 @@ class Algorithm(object):
             current_time = current_time + process.counter
             total_waiting += process.waiting
 
-        print("SJF : " + str(total_waiting))
+        self.processes = sorted(self.processes, key=lambda x: x.order, reverse=False)
         self.awt = total_waiting / len(self.processes)
 
     def priority(self):
@@ -72,7 +71,7 @@ class Algorithm(object):
             current_time = current_time + process.counter
             total_waiting += process.waiting
 
-        print("PRIORITY : " + str(total_waiting))
+        self.processes = sorted(self.processes, key=lambda x: x.order, reverse=False)
         self.awt = total_waiting / len(self.processes)
 
     def round_robin(self):
@@ -110,7 +109,7 @@ class Algorithm(object):
             if idx >= len(self.processes):
                 idx = 0
 
-        print("RROBIN : " + str(total_waiting))
+        self.processes = sorted(self.processes, key=lambda x: x.order, reverse=False)
         self.awt = total_waiting / len(self.processes)
 
     def srpt(self):
@@ -119,68 +118,100 @@ class Algorithm(object):
         current_time = 0
         idx = 1
         current = None
-        arrived_count = 1
         arrived_processes = []
-
-        while current_time <= self.max_arrival:
+        print(self.total_burst)
+        while current_time <= self.total_burst:
+            print("Time: " + str(current_time))
             for item in processes:
                 if item.arrival == current_time:
-                    arrived_count += 1
                     arrived_processes.append(item)
             arrived_processes = sorted(arrived_processes, key=lambda x: x.counter, reverse=False)
-
-            if not current:
+            print("Current is null? = " + str(current is None))
+            if not current:``
                 current = arrived_processes.pop(0)
-                current.executions += 1
-                current.waiting = (current_time - (current.executions - 1)) - current.arrival
-                current.decrease_burst(factor=1)
                 self.job_order.append([current.name, current_time, current_time + 1])
+                current.waiting = (current_time - (current.executions)) - current.arrival
+                current.executions += 1
+                current.decrease_burst(factor=1)
+                print("Process name: " + current.name)
+                print("Process executions: " + str(current.executions))
+                print("Process CPU time: " + str(current.counter))
+                print("Process Waiting: " + str(current.waiting))
             else:
+                print("Have arrived_processes? = " + str(len(arrived_processes) > 0))
                 if len(arrived_processes):
+                    print("Current burst time is zero? = " + str(current.counter == 0))
                     if current.counter == 0:
                         current = arrived_processes.pop(0)
-                        current.executions += 1
-                        current.waiting = (current_time - (current.executions - 1)) - current.arrival
-                        current.decrease_burst(factor=1)
                         self.job_order.append([current.name, current_time, current_time + 1])
+                        current.waiting = (current_time - (current.executions)) - current.arrival
+                        current.executions += 1
+                        current.decrease_burst(factor=1)
+                        print("Process name: " + current.name)
+                        print("Process executions: " + str(current.executions))
+                        print("Process CPU time: " + str(current.counter))
+                        print("Process Waiting: " + str(current.waiting))
                     else:
+                        print("Override current? = " + str(arrived_processes[0].counter < current.counter))
+                        top = arrived_processes[0]
+                        print("Top process name: " + top.name)
+                        print("Top process executions: " + str(top.executions))
+                        print("Top process CPU time: " + str(top.counter))
+                        print("Top process Waiting: " + str(top.waiting))
                         if arrived_processes[0].counter < current.counter:
                             if current not in arrived_processes:
                                 arrived_processes.append(current)
-                            current = arrived_processes.pop(0)
-                            current.executions += 1
-                            current.waiting = (current_time - (current.executions - 1)) - current.arrival
-                            current.decrease_burst(factor=1)
-                            self.job_order.append([current.name, current_time, current_time + 1])
 
+                            print("Prev process name: " + current.name)
+                            print("Prev process executions: " + str(current.executions))
+                            print("Prev process CPU time: " + str(current.counter))
+                            print("Prev process Waiting: " + str(current.waiting))
+                            current = arrived_processes.pop(0)
+                            self.job_order.append([current.name, current_time, current_time + 1])
+                            current.waiting = (current_time - (current.executions)) - current.arrival
+                            current.executions += 1
+                            current.decrease_burst(factor=1)
+                        else:
+                            current.waiting = (current_time - (current.executions)) - current.arrival
+                            current.executions += 1
+                            current.decrease_burst(factor=1)
+                            print("Process name: " + current.name)
+                            print("Process executions: " + str(current.executions))
+                            print("Process CPU time: " + str(current.counter))
+                            print("Process Waiting: " + str(current.waiting))
+                else:
+                    self.job_order.append([current.name, current_time, current_time + 1])
+                    current.waiting = (current_time - (current.executions)) - current.arrival
+                    current.executions += 1
+                    current.decrease_burst(factor=1)
+                    print("Process name: " + current.name)
+                    print("Process executions: " + str(current.executions))
+                    print("Process CPU time: " + str(current.counter))
+                    print("Process Waiting: " + str(current.waiting))
+
+                print("\n")
             current_time += 1
 
-        arrived_processes = sorted(arrived_processes, key=lambda x: x.counter, reverse=False)
         total_waiting = 0
 
-        for process in arrived_processes:
-            if process.counter > 0:
-                self.job_order.append([process.name, current_time, current_time + process.counter])
-                process.waiting = (current_time - process.executions) - process.arrival
-                current_time = current_time + process.counter
+        for process in self.processes:
             total_waiting += process.waiting
 
         self.processes = sorted(self.processes, key=lambda x: x.order, reverse=False)
-        print("SRPT : " + str(total_waiting))
         self.awt = total_waiting / len(self.processes)
 
     def get_awt(self):
-        return str(self.awt) + self.unit
+        return str(self.awt) + " " + self.unit
 
     def get_gantt(self):
         gantt = ""
-        for idx, process in enumerate(self.job_order):
-            gantt += process[0] + "(" + str(process[1]) + "-" + str(process[2]) + ")"
-            if idx == len(self.job_order) - 1:
-                gantt += ""
-            else:
-                gantt += " -- "
-            if idx > 0 and idx % 5 == 0:
-                gantt += "\n"
+        # for idx, process in enumerate(self.job_order):
+        #     gantt += process[0] + "(" + str(process[1]) + "-" + str(process[2]) + ")"
+        #     if idx == len(self.job_order) - 1:
+        #         gantt += ""
+        #     else:
+        #         gantt += " -- "
+        #     if idx > 0 and idx % 5 == 0:
+        #         gantt += "\n"
 
         return gantt
