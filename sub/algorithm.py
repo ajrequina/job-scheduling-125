@@ -1,4 +1,6 @@
+from __future__ import division
 import copy
+
 
 class Algorithm(object):
     def __init__(self, name=None, processes=[], awt=0, unit="ms", time_slice=4):
@@ -42,7 +44,7 @@ class Algorithm(object):
             process.waiting = current_time
             current_time = current_time + process.counter
             total_waiting += process.waiting
-
+        print("FCFS : " + str(total_waiting))
         self.awt = total_waiting / len(self.processes)
 
     def sjf(self):
@@ -56,6 +58,7 @@ class Algorithm(object):
             current_time = current_time + process.counter
             total_waiting += process.waiting
 
+        print("SJF : " + str(total_waiting))
         self.awt = total_waiting / len(self.processes)
 
     def priority(self):
@@ -69,6 +72,7 @@ class Algorithm(object):
             current_time = current_time + process.counter
             total_waiting += process.waiting
 
+        print("PRIORITY : " + str(total_waiting))
         self.awt = total_waiting / len(self.processes)
 
     def round_robin(self):
@@ -97,15 +101,16 @@ class Algorithm(object):
                     process.decrease_burst(factor=self.time_slice)
                     process.executions += self.time_slice
 
-                if process.counter <= 0:
+                if process.counter == 0:
                     done_processes.append(idx)
-                    process.waiting = ((time - factor) - process.executions)
-                    total_waiting += ((time - factor) - process.executions)
+                    process.waiting = ((time - factor) - (process.executions - self.time_slice))
+                    total_waiting += ((time - factor) - (process.executions - self.time_slice))
 
             idx += 1
             if idx >= len(self.processes):
                 idx = 0
 
+        print("RROBIN : " + str(total_waiting))
         self.awt = total_waiting / len(self.processes)
 
     def srpt(self):
@@ -113,40 +118,55 @@ class Algorithm(object):
         processes = self.processes
         current_time = 0
         idx = 1
-        current = processes[0]
+        current = None
         arrived_count = 1
+        arrived_processes = []
 
-        while current.counter > 0:
-            arrived_processes = []
+        while current_time <= self.max_arrival:
             for item in processes:
-                if item.order != current.order and item.arrival == current_time:
+                if item.arrival == current_time:
                     arrived_count += 1
                     arrived_processes.append(item)
+            arrived_processes = sorted(arrived_processes, key=lambda x: x.counter, reverse=False)
 
-            self.job_order.append([current.name, current_time, current_time + 1])
-            current.waiting = (current_time - current.executions) - current.arrival
-            current.executions += 1
-            current.decrease_burst(factor=1)
-
-            if len(arrived_processes) and arrived_count != len(processes) and current.counter == 0:
-                current = arrived_processes[0]
-
-            for item in arrived_processes:
-                if item.order != current.order and item.counter < current.counter:
-                    current = item
+            if not current:
+                current = arrived_processes.pop(0)
+                current.executions += 1
+                current.waiting = (current_time - (current.executions - 1)) - current.arrival
+                current.decrease_burst(factor=1)
+                self.job_order.append([current.name, current_time, current_time + 1])
+            else:
+                if len(arrived_processes):
+                    if current.counter == 0:
+                        current = arrived_processes.pop(0)
+                        current.executions += 1
+                        current.waiting = (current_time - (current.executions - 1)) - current.arrival
+                        current.decrease_burst(factor=1)
+                        self.job_order.append([current.name, current_time, current_time + 1])
+                    else:
+                        if arrived_processes[0].counter < current.counter:
+                            if current not in arrived_processes:
+                                arrived_processes.append(current)
+                            current = arrived_processes.pop(0)
+                            current.executions += 1
+                            current.waiting = (current_time - (current.executions - 1)) - current.arrival
+                            current.decrease_burst(factor=1)
+                            self.job_order.append([current.name, current_time, current_time + 1])
 
             current_time += 1
 
-        self.processes = sorted(self.processes, key=lambda x: x.counter, reverse=False)
+        arrived_processes = sorted(arrived_processes, key=lambda x: x.counter, reverse=False)
         total_waiting = 0
-        for process in self.processes:
+
+        for process in arrived_processes:
             if process.counter > 0:
                 self.job_order.append([process.name, current_time, current_time + process.counter])
                 process.waiting = (current_time - process.executions) - process.arrival
                 current_time = current_time + process.counter
             total_waiting += process.waiting
 
-        self.processes = sorted(self.processes, key=lambda x: x.arrival, reverse=False)
+        self.processes = sorted(self.processes, key=lambda x: x.order, reverse=False)
+        print("SRPT : " + str(total_waiting))
         self.awt = total_waiting / len(self.processes)
 
     def get_awt(self):
